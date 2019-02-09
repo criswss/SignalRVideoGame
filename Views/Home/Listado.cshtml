@@ -1,0 +1,102 @@
+@model IEnumerable<Np2.Models.Persona>
+
+@{
+    ViewData["Title"] = "Listado";
+}
+
+<h1>Listado</h1>
+
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Nombre)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Edad)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Estatus)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr id="@item.Id">
+            <td>
+                @Html.DisplayFor(modelItem => item.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Nombre)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Edad)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Estatus)
+            </td>
+            <td>
+                <button type="button" class="btn btn-primary" onclick="changeEstatus(@item.Id)">Socket</button> |
+                 <button type="button" class="btn btn-primary" onclick="changeEstatusAjax(@item.Id)">Ajax</button>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+@section scripts { 
+    <script src="~/lib/signalr/dist/browser/signalr.js"></script>
+    <script>
+
+        "use strict";
+
+        var connection = new signalR.HubConnectionBuilder().withUrl("/ListadoHub").build();
+
+        //Disable send button until connection is established
+        connection.on("ReceiveChange", function (id, list) {
+            console.log(id);
+            console.log(list);
+            $( "#"+id ).remove();
+
+        });
+
+        connection.start().then(function(){
+            console.log("Conecction good job")
+        }).catch(function (err) {
+            console.log("bad job")
+        });
+
+
+
+        function changeEstatus(id){
+
+            connection.invoke("SendChange", id).catch(function (err) {
+                return console.error(err.toString());
+            });
+
+
+        }
+
+        function changeEstatusAjax(id){
+            var data = {}
+            data.id = id;
+
+            $.ajax({
+				type: "POST",
+				url: "/Home/Change",
+				data: data,
+				success: function () {
+					console.log("YEYS")
+				},
+				error: function (data) {
+                    console.log("MYBAD")
+				}
+			});
+        }
+    </script>
+}

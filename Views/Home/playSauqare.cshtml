@@ -1,0 +1,117 @@
+<style>
+    html{
+  height:100%;
+}
+
+#mycanvas{
+    display:block;
+    margin:33px auto 0 auto;
+    border-radius:4px;
+    background:transparent;
+    border:1px solid #ccc;
+}
+
+body{
+  position: relative;	background-image: -webkit-linear-gradient(bottom, #2c1b1b, #657374);
+	background-image: -moz-linear-gradient(bottom, #2c1b1b, #657374);
+	background-image: -o-linear-gradient(bottom, #2c1b1b, #657374);
+	background-image: linear-gradient(to top, #2c1b1b, #657374);
+}
+</style>
+<label>Players Name:</label>
+<input id="PlayerName">
+<button id="buttonCreate" onclick="createPlayer()">Crear jugador</button>
+<button onclick="hazAlgo()">jalate</button>
+<canvas id="mycanvas" width="300" height="300">
+</canvas>
+@section scripts { 
+    <script src="~/lib/signalr/dist/browser/signalr.js"></script>
+    <script>
+        var connection = new signalR.HubConnectionBuilder().withUrl("/PlayYay").build();
+        connection.start().then(function(){
+            console.log("Conecction good job")
+        }).catch(function (err) {
+            console.log("bad job")
+        });
+
+        connection.on("ReceiveChange", function (list) {
+            oCtx.clearRect(0,0,300, 300);
+            list.forEach(function(element) {
+                oCtx.fillRect(element.x, element.y, 15, 15);
+            });
+        });
+
+
+        var list = []
+        var currentPlayer = null;
+        
+        var oCtx = null;
+        var oRect = {x:0, y:0};
+        var oMove = {up:0, down:0, left:0, right:0};
+
+
+
+
+        window.addEventListener('load' , function(){
+        idCanvas = document.getElementById('mycanvas');
+        oCtx = idCanvas.getContext('2d');
+        setInterval(mainLoop, 5);
+        } , false);
+
+        function mainLoop(){
+            if (oMove.down) currentPlayer.y++;
+            if (oMove.up) currentPlayer.y--;
+            if (oMove.left) currentPlayer.x--;
+            if (oMove.right) currentPlayer.x++;
+            if(currentPlayer!= null){
+              changePerPlayer();
+            }
+        }
+
+
+        window.addEventListener('keydown' , function(e){
+        if (e.keyCode == 40) oMove.down = 1;
+        if (e.keyCode == 38) oMove.up = 1;
+        if (e.keyCode == 37) oMove.left = 1;
+        if (e.keyCode == 39) oMove.right = 1;
+        }, false);
+
+
+        window.addEventListener('keyup' , function(e){
+        if (e.keyCode == 40) oMove.down = 0;
+        if (e.keyCode == 38) oMove.up = 0;
+        if (e.keyCode == 37) oMove.left = 0;
+        if (e.keyCode == 39) oMove.right = 0;
+        }, false);
+
+
+  
+        function changePerPlayer(){
+            connection.invoke("mandarCambio", currentPlayer).catch(function (err) {
+                return console.error(err.toString());
+            });
+        }
+
+
+        function createPlayer(){
+            var data = {}
+            data.nombre = $('#PlayerName').val();
+            $("#buttonCreate").attr("disabled", true);
+
+            $.ajax({
+				type: "POST",
+				url: "/Home/createPlayer",
+				data: data,
+				success: function (data) {
+                    currentPlayer = data;
+					list.push(data);
+                    changePerPlayer();
+				},
+				error: function (data) {
+				}
+			});
+        }
+
+
+    </script>
+}
